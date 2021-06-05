@@ -61,7 +61,7 @@ void lightAlarm()
     FastLED.setBrightness(brightness);
     brightness = brightness + 1;
     FastLED.show();
-    delay(1700);
+    delay(17000);
   }
 }
 
@@ -79,7 +79,7 @@ void setup()
     leds[i] = CRGB( 0, 0, 0);
   }
   FastLED.show();
-  timer.setInterval(100, lightAlarm);
+  timer.setInterval(1000, lightAlarm);
   delay(30);
 }
 
