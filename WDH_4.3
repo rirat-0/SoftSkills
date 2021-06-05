@@ -1,0 +1,124 @@
+
+#define BLYNK_PRINT Serial
+#define FASTLED_ALLOW_INTERRUPTS 0
+#define FASTLED_ESP8266_RAW_PIN_ORDER
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+#include <TimeLib.h>
+#include <WidgetRTC.h>
+#include "FastLED.h"
+
+#define NUM_LEDS 8
+#define DATAPIN D3
+#define READPIN D1
+
+CRGB leds[NUM_LEDS];
+
+char auth[] = "*****";
+
+char ssid[] = "*****";   
+char pass[] = "*****";   
+
+BlynkTimer timer;
+WidgetRTC rtc;
+
+// Zeitparameter der Alarmzeit
+int alarm = 0;    
+// Zeitparameter der Startzeit des Weckers
+int alarmStart = 0;
+// Integer fuer die Zeit in Sekunden
+int timeInSeconds = 0;
+int brightness = 0;
+// Int-Wert fuer die Buttons um die Animation zu stoppen
+int counter = 0;
+// Int-Parameter fuer den Knopf der Blynk-App
+int virtuaButton = 0;
+
+// Methode fuer den Empfang der Weckzeit
+BLYNK_WRITE(V0)
+{
+  alarm = param.asInt();
+}
+
+// Methode fuer den Button der Blynk-App
+BLYNK_WRITE(V1)
+{
+  virtuaButton = param.asInt();
+}
+
+// Synchronisation der Zeit ueber Blynk
+BLYNK_CONNECTED() 
+{
+  rtc.begin();
+}
+
+// Methode fuer die Weck-Animation
+void lightAlarm()
+{
+  while(brightness < 101 && counter == 1)
+  {
+    FastLED.setBrightness(brightness);
+    brightness = brightness + 1;
+    FastLED.show();
+    delay(1700);
+  }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  Blynk.begin(auth, ssid, pass, "iot.informatik.uni-oldenburg.de", 8080);
+  pinMode(READPIN, INPUT);
+  delay(3000);
+  FastLED.addLeds<WS2811,DATAPIN,GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(0);
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, 400);
+  for(int i = 0; i < 8; i++)
+  {
+    leds[i] = CRGB( 0, 0, 0);
+  }
+  FastLED.show();
+  timer.setInterval(100, lightAlarm);
+  delay(30);
+}
+
+void loop()
+{
+  Blynk.run();
+
+  // Konvertierung der Zeit in Sekunden fuer vereinfachte Rechnung
+  timeInSeconds = hour() * 3600 + minute() * 60 + second();
+  alarmStart = alarm - timeInSeconds;
+
+  // Gibt Startsignal fuer die Animation, 30 min vor Weckzeit
+  if(alarmStart == 1800)
+  {
+    // Befehl zum Testen der Zeit ueber Serial Monitor
+    Serial.println("Alarm starts now.");
+    counter = 1;
+    delay(1000);
+  }
+
+  // Stellt Farbe der Leds ein und startet die Animation
+  while(counter == 1 && brightness < 100)
+  {
+    for(int i = 0; i < 8; i++)
+    {
+      leds[i] = CRGB( 255, 255, 0);
+    }
+    timer.run();
+  }
+
+  // If-Condition damit beide Buttons das Licht ausschalten koennen
+  if(digitalRead(READPIN) == HIGH || virtuaButton == 1)
+  {
+    // Befehl zum Testen fuer den Serial Monitor
+    Serial.println("Button pressed.");
+    FastLED.setBrightness(0);
+    counter = 0;
+    brightness = 0;
+    FastLED.show();
+    delay(50);
+  }
+}
