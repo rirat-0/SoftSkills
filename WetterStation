@@ -132,7 +132,7 @@ void fade(int led_position, uint16_t duration, uint16_t delay_val, uint16_t star
   leds[led_position] = CRGB(endR, endG, endB);
 }
 
-// Methode die eine Animation abspielt, die die erste Led gelb blinken laesst
+
 void LED_effect_clearSky() { // Effekt, der angezeigt wird, wenn der Himmel klar ist
   leds[7] = CRGB::Yellow;
   FastLED.show();
